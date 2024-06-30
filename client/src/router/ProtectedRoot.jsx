@@ -1,6 +1,6 @@
 import { Outlet, useNavigate } from "react-router-dom";
 
-function ProtectedRoot({ children }) {
+function ProtectedRoot() {
   const nav = useNavigate();
 
   if (!localStorage.getItem("accessToken")) {

@@ -11,7 +11,9 @@ import resolvers from "./resolvers/index.js";
 import typeDefs from "./schemas/index.js";
 import "./firebase/config.js";
 import { getAuth } from "firebase-admin/auth";
-import { log } from "console";
+import { makeExecutableSchema } from "@graphql-tools/schema";
+import { WebSocketServer } from "ws";
+import { useServer } from "graphql-ws/lib/use/ws";
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -19,16 +21,41 @@ const httpServer = http.createServer(app);
 const URI = `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@cluster0.2lrnmiv.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 const PORT = process.env.PORT || 4000;
 
+const schema = makeExecutableSchema({ typeDefs, resolvers });
+// Creating the WebSocket server
+const wsServer = new WebSocketServer({
+  // This is the `httpServer` we created in a previous step.
+  server: httpServer,
+  // Pass a different path here if app.use
+  // serves expressMiddleware at a different path
+  path: "/graphql",
+});
+
+// Hand in the schema we just created and have the
+// WebSocketServer start listening.
+const serverCleanup = useServer({ schema }, wsServer);
+
 const server = new ApolloServer({
-  typeDefs,
-  resolvers,
-  plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
+  // typeDefs,
+  // resolvers,
+  schema,
+  plugins: [
+    ApolloServerPluginDrainHttpServer({ httpServer }),
+    {
+      async serverWillStart() {
+        return {
+          async drainServer() {
+            await serverCleanup.dispose();
+          },
+        };
+      },
+    },
+  ],
 });
 
 await server.start();
 
 const authJWT = async (req, res, next) => {
-
   const auth = req.headers.authorization;
   if (auth) {
     const accessToken = req.headers.authorization.split(" ")[1];
@@ -36,7 +63,6 @@ const authJWT = async (req, res, next) => {
     getAuth()
       .verifyIdToken(accessToken)
       .then((decodedToken) => {
-        console.log({ decodedToken });
         res.locals.uid = decodedToken.uid;
         next();
       })
@@ -45,7 +71,6 @@ const authJWT = async (req, res, next) => {
         return res.status(403);
       });
   } else {
-    
     next();
 
     // return res.status(401);
