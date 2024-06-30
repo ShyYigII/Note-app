@@ -6,17 +6,26 @@ import ProtectedRoot from "./ProtectedRoot";
 import ErrorPage from "../pages/ErrorPage";
 import NoteList from "../components/NoteList";
 import Note from "../components/Note";
-import {noteLoader, notesLoader} from "../utils/noteUtils";
+import {
+  addNewNote,
+  noteLoader,
+  notesLoader,
+  updateNote,
+} from "../utils/noteUtils";
 import { folderLoader } from "../utils/folderUtils";
 
 const AuthLayout = () => {
-  return <AuthProvider><Outlet /></AuthProvider>;
+  return (
+    <AuthProvider>
+      <Outlet />
+    </AuthProvider>
+  );
 };
 
 const CreateBrowserRouter = createBrowserRouter([
   {
-    element: <AuthLayout/>,
-    errorElement :<ErrorPage/>,
+    element: <AuthLayout />,
+    errorElement: <ErrorPage />,
     children: [
       {
         path: "/login",
@@ -24,35 +33,33 @@ const CreateBrowserRouter = createBrowserRouter([
       },
 
       {
-        element: <ProtectedRoot/>,
+        element: <ProtectedRoot />,
         children: [
           {
             element: <Home />,
             path: "/",
             loader: folderLoader,
-            children:[
+            children: [
               {
-                element :<NoteList />,
-                path: "/folders/:folderId",
+                element: <NoteList />,
+                path: "folders/:folderId",
+                action: addNewNote,
                 loader: notesLoader,
-                children:[
+                children: [
                   {
-                    element:<Note/>,
+                    element: <Note />,
                     path: "note/:noteId",
+                    action: updateNote,
                     loader: noteLoader,
-                  }
-                ]
-              }
-            ]
+                  },
+                ],
+              },
+            ],
           },
-          
-        ]
-        
+        ],
       },
-    
     ],
   },
 ]);
-
 
 export default CreateBrowserRouter;

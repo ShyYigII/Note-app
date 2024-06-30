@@ -1,3 +1,5 @@
+import { graphqlRequest } from "./request";
+
 export const notesLoader = async ({ params: { folderId } }) => {
   const query = `query Folder($folderId: String) {
                     folder(folderId: $folderId) {
@@ -6,54 +8,85 @@ export const notesLoader = async ({ params: { folderId } }) => {
                         notes {
                         id
                         content
+                        updatedAt
                         }
                 }
                     }
 
                 `;
-  const res = await fetch("http://localhost:4000/graphql", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
+  const data = await graphqlRequest({
+    query,
+    variables: {
+      folderId,
     },
-    body: JSON.stringify({
-      query,
-      variables: {
-        folderId,
-      },
-    }),
   });
 
-  const { data } = await res.json();
-  console.log('folder list' , data);
   return data;
 };
 
 export const noteLoader = async ({ params: { noteId } }) => {
-  console.log("loader note", noteId);
   const query = `query Note($noteId: String) {
   note(noteId: $noteId) {
     id
     content
+    
   }
 }
                `;
-  const res = await fetch("http://localhost:4000/graphql", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
+  const data = await graphqlRequest({
+    query,
+    variables: {
+      noteId,
     },
-    body: JSON.stringify({
-      query,
-      variables: {
-        noteId,
-      },
-    }),
   });
 
-  const { data } = await res.json();
-  console.log("note list", data);
   return data;
+};
+
+export const addNewNote = async ({ params, request }) => {
+  const newNote = await request.formData();
+
+  const formDataObj = {};
+  newNote.forEach((value, key) => (formDataObj[key] = value));
+
+  console.log("formDataObj", formDataObj);
+
+  const query = `mutation AddNewNote($content :String!, $folderId:ID!){
+    addNote(content: $content, folderId: $folderId){
+      id    
+      content
+    }
+  
+  }`;
+
+  const { addNote } = await graphqlRequest({
+    query,
+    variables: formDataObj,
+  });
+
+  return addNote;
+};
+
+export const updateNote = async ({ params, request }) => {
+  const updatedNote = await request.formData();
+
+  const formDataObj = {};
+  updatedNote.forEach((value, key) => (formDataObj[key] = value));
+
+  console.log("formDataObj", formDataObj);
+
+  const query = `mutation AddNewNote($id: String!,$content :String!){
+    updateNote(content: $content, id: $id){
+      id    
+      content
+    }
+  
+  }`;
+
+  const { updateNote } = await graphqlRequest({
+    query,
+    variables: formDataObj,
+  });
+
+  return updateNote;
 };

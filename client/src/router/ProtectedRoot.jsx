@@ -1,18 +1,14 @@
 import { Outlet, useNavigate } from "react-router-dom";
 
+function ProtectedRoot({ children }) {
+  const nav = useNavigate();
 
-function ProtectedRoot({children}) {
-    const nav = useNavigate();
+  if (!localStorage.getItem("accessToken")) {
+    nav("/login");
+    return;
+  }
 
-
-    if(!localStorage.getItem('accessToken')){
-        nav('/login');
-        return
-    }
-
-    return (
-        <Outlet/>
-    );
+  return <Outlet />;
 }
 
 export default ProtectedRoot;
